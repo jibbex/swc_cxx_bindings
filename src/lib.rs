@@ -7,7 +7,6 @@ use std::{
     os::raw::c_char
 };
 use anyhow::Context;
-use cbindgen::Profile;
 use log::debug;
 use swc::{try_with_handler, TransformOutput};
 use swc_core::common::GLOBALS;
@@ -85,7 +84,7 @@ impl Output {
 pub extern "C" fn transpile_js(file: *const c_char, input: *const c_char) -> Output  {
     let cm = Arc::<SourceMap>::default();
     let compiler = swc::Compiler::new(cm.clone());
-    let output = GLOBALS.set(Default::default(), || {
+    let output = GLOBALS.set(&Default::default(), || {
         try_with_handler(cm.clone(), Default::default(), |handler| {
             let file_name = FileName::Custom(unsafe {
                 CStr::from_ptr(file).to_string_lossy().into_owned()
