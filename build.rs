@@ -56,9 +56,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else {
         eprintln!("Source library {} does not exist yet", src_lib.display());
-        return Err(Box::new(
-            std::io::Error::new(std::io::ErrorKind::NotFound, "No such file or directory")
-        ));
     }
 
     Ok(())
