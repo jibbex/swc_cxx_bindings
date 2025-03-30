@@ -1,0 +1,19 @@
+language = "C++"
+cpp_compat = true
+namespace = "swc"
+documentation = true
+
+[parse]
+parse_deps = false
+include = ["swc"]
+
+[export]
+prefix = "SWC_"
+include = ["Output", "transpile_ts", "free_output", "free_string"]
+
+[layout]
+aligned_pod = true
+
+[fn]
+sort_by = "Name"
+rename_args = "CamelCase"

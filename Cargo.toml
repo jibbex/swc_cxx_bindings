@@ -1,0 +1,22 @@
+[package]
+name = "swc_cxx_bindings"
+version = "0.0.5"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+cbindgen = "0.28.0"
+swc = "17.0.0"
+anyhow = "1.0.97"
+log = "0.4.27"
+[dependencies.swc_core]
+version = "17.0.0"
+features = ["ecma_parser", "ecma_codegen", "ecma_transforms_typescript", "common", "base", "ecma_ast", "swc_ecma_parser", "ecma_visit"]
+
+[lib]
+name = "swc_ffi"
+crate-type = ["cdylib"]
+
+[build-dependencies]
+cbindgen = "0.28.0"
+build-target = "0.4.0"

@@ -1,0 +1,6 @@
+/target
+libswc*
+*.h
+examples/example
+.idea/
+cargo.lock
