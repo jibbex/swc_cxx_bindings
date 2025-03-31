@@ -1,4 +1,4 @@
-#include "../swc_ts.h"
+#include "../swc.h"
 #include <iostream>
 
 int main() {
@@ -8,17 +8,11 @@ int main() {
     )";
 
     const char* file_name = "example.ts";
-    Output transpiled = transpile_js(ts_code, file_name);
+    auto transpiled = swc::transpile(ts_code, file_name);
 
-    std::cout << transpiled.code << '\n'
-        << transpiled.map << '\n'
-        << transpiled.output << '\n'
-        << transpiled.diagnostics << std::endl;
+    std::cout << transpiled << std::endl;
 
-    free_string(transpiled.code);
-    free_string(transpiled.map);
-    free_string(transpiled.output);
-    free_string(transpiled.diagnostics);
+    swc::free_string(transpiled);
 
     return 0;
 }
