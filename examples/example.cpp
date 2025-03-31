@@ -7,9 +7,8 @@ int main(int argc, char const *argv[]) {
     constexpr auto UNDERLINE = "\033[4m";
 
     if (argc < 2) {
-        std::cerr << UNDERLINE
-            << YELLOW << "Usage: "
-            << RESET << YELLOW
+        std::cerr << UNDERLINE << "Usage"
+            << RESET << ": " << YELLOW
             << argv[0] << " <file_name>"
             << RESET << std::endl;
 
