@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("cargo:rerun-if-changed=src/lib.rs");
         },
         Err(e) => {
-            eprintln!("cbindgen error(swc_ts.h): {}", e);
+            eprintln!("cbindgen error(swc.h): {}", e);
             std::process::exit(1);
         }
     }
