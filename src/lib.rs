@@ -34,7 +34,7 @@ use swc_ecma_visit::VisitMutWith;
 /// let fileFromSource = File::FileName("test.ts", "const a = 1;".to_string());
 /// ```
 ///
-enum File {
+pub enum File {
     FilePath(&'static Path),
     FileName(FileName, String),
 }
@@ -82,7 +82,7 @@ enum File {
 /// # Panics
 ///
 /// This function panics if the program parsing fails. This should never happen in practice.
-fn transpile_tsx_to_js(
+pub fn transpile_tsx_to_js(
     cm: Lrc<SourceMap>,
     filename: File,
 ) -> Result<String, Box<dyn std::error::Error>> {

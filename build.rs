@@ -3,6 +3,7 @@ extern crate cbindgen;
 use std::fs;
 use std::env;
 use std::path::Path;
+use cbindgen::DocumentationStyle;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
@@ -11,7 +12,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = cbindgen::Config {
         language: cbindgen::Language::Cxx,
         cpp_compat: true,
+        pragma_once: true,
+        tab_width: 4,
         namespace: Some(String::from("swc")),
+        documentation_style: DocumentationStyle::Cxx,
         documentation: true,
         ..Default::default()
     };
@@ -34,12 +38,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target_dir = Path::new(&crate_dir).join("target");
     let (src_lib, dest_lib) = if profile == build_target::Profile::Release {
         (
-            target_dir.join("release").join("libswc_ffi.so"),
+            target_dir.join("release").join("libswc.so"),
             Path::new(&crate_dir).join("libswc.so")
         )
     } else {
         (
-            target_dir.join("debug").join("libswc_ffi.so"),
+            target_dir.join("debug").join("libswc.so"),
             Path::new(&crate_dir).join("libswc-devel.so")
         )
     };

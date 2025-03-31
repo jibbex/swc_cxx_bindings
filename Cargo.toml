@@ -16,7 +16,7 @@ swc_ecma_transforms_typescript = "13.0.0"
 swc = "18.0.0"
 
 [lib]
-name = "swc_ffi"
+name = "swc"
 crate-type = ["cdylib"]
 
 [build-dependencies]
