@@ -9,16 +9,11 @@ cbindgen = "0.28.0"
 swc_common = { version = "8.0.1", features = ["tty-emitter"] }
 swc_ecma_ast = "8.1.0"
 swc_ecma_transforms_base = "12.0.0"
-swc_ecma_transforms_react = "13.0.0"
-swc_ecma_utils = "12.0.0"
 swc_ecma_visit = "8.0.0"
 swc_ecma_codegen = "8.1.0"
 swc_ecma_parser = "11.0.0"
 swc_ecma_transforms_typescript = "13.0.0"
 swc = "18.0.0"
-anyhow = "1.0.97"
-log = "0.4.27"
-bytes = "1.10.1"
 
 [lib]
 name = "swc_ffi"

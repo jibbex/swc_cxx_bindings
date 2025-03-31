@@ -8,11 +8,12 @@ int main() {
     )";
 
     const char* file_name = "example.ts";
-    auto transpiled = swc::transpile(ts_code, file_name);
+    auto code = swc::transpile(file_name, ts_code);
+//    auto code_from_file = swc::transpile_file(file_name);
 
-    std::cout << transpiled << std::endl;
+    std::cout << code << std::endl;
 
-    swc::free_string(transpiled);
+    swc::free_string(code);
 
     return 0;
 }
