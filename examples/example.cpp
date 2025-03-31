@@ -38,6 +38,7 @@ console.log(greet(world));
     std::cout << "\n" << YELLOW << UNDERLINE << "File:\n\n"<< RESET << code_from_file << std::endl;
 
     swc::free_string(code);
+    swc::free_string(code_from_file);
 
     return 0;
 }
