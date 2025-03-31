@@ -36,7 +36,10 @@ cd swc-cxx-bindings
 cargo build --release
 
 # Use in C++ (while secretly thanking the Rust developers)
-g++ -std=c++17 examples/example.cpp -I. -L./target/release -lswc_ffi -o examples/example
+g++ -std=c++17 examples/example.cpp -I. -L. -lswc -Wl,-rpath,'$ORIGIN/..' -o examples/example
+
+# Run the example (and wonder why you're using C++ bindings for a Rust tool)
+examples/example examples/example.ts
 
 # On Windows? May the force be with you! 🍀
 ```
