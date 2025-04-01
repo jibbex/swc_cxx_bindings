@@ -13,6 +13,7 @@ swc_ecma_visit = "8.0.0"
 swc_ecma_codegen = "8.1.0"
 swc_ecma_parser = "11.0.0"
 swc_ecma_transforms_typescript = "13.0.0"
+swc_ecma_transforms_react = "13.0.0"
 swc = "18.0.0"
 
 [lib]

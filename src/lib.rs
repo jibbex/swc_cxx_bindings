@@ -9,6 +9,7 @@ use std::path::Path;
 use swc_common::{errors::{ColorConfig, Handler}, sync::Lrc, FileName, Globals, Mark, SourceMap, GLOBALS};
 use swc_common::comments::SingleThreadedComments;
 use swc_ecma_codegen::{Config, Emitter};
+use swc_ecma_transforms_react::{jsx, Options as JsxOptions};
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, TsSyntax};
 use swc_ecma_transforms_base::fixer::fixer;
 use swc_ecma_transforms_base::hygiene::hygiene;
@@ -132,14 +133,19 @@ pub fn transpile_tsx_to_js(
     GLOBALS.set(&globals, || {
         let unresolved_mark = Mark::new();
         let top_level_mark = Mark::new();
+        let mut config: Config = Default::default();
+        let jsx_options = JsxOptions {
+            pragma: Some(Lrc::new("React.createElement".into())),
+            pragma_frag: Some(Lrc::new("React.Fragment".into())),
+            ..Default::default()
+        };
 
+        config.target = swc_ecma_ast::EsVersion::Es2015;
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, true));
+        program.visit_mut_with(&mut jsx(cm.clone(), Some(&comments), jsx_options, top_level_mark, unresolved_mark));
         strip(unresolved_mark, top_level_mark).process(&mut program);
         program.visit_mut_with(&mut hygiene());
         program.visit_mut_with(&mut fixer(Some(&comments)));
-
-        let mut config: Config = Default::default();
-        config.target = swc_ecma_ast::EsVersion::Es2015;
         let mut buf = vec![];
         let mut emitter = Emitter {
             cfg: config,
