@@ -28,9 +28,9 @@ const world: User = {
 console.log(greet(world));
     )";
 
-    const char* file_name = argv[1];
+    const char* file_name = "test.ts";
     auto code = swc::transpile(file_name, ts_code);
-    auto code_from_file = swc::transpile_file(file_name);
+    auto code_from_file = swc::transpile_file(argv[1]);
 
     std::cout << "\n" << YELLOW << UNDERLINE << "Input:\n" << RESET << ts_code << std::endl;
     std::cout << "\n" << YELLOW << UNDERLINE << "Output:\n\n"<< RESET << code << std::endl;
