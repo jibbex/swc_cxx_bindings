@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         pragma_once: true,
         tab_width: 4,
         namespace: Some(String::from("swc")),
-        documentation_style: DocumentationStyle::Cxx,
+        documentation_style: DocumentationStyle::Doxy,
         documentation: true,
         ..Default::default()
     };

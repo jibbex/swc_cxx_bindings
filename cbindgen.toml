@@ -2,17 +2,21 @@ language = "C++"
 cpp_compat = true
 namespace = "swc"
 documentation = true
+document_style = "Doxygen"
+autogen_warning = true
 
 [parse]
 parse_deps = false
 include = ["swc"]
 
 [export]
-include = ["compile_file", "transpile", "transpile_file", "free_string"]
-
-#[layout]
-#aligned_pod = true
-#
-#[fn]
-#sort_by = "Name"
-#rename_args = "CamelCase"
+include = [
+    "compile_js",
+    "compile_file",
+    "minify_js",
+    "minify_file",
+    "transpile",
+    "transpile_file",
+    "free_string",
+    "free_const_string"
+]

@@ -32,7 +32,7 @@ console.log(greet(world));
     const char* file_name = "test.ts";
     char *error;
     auto code = swc::transpile(file_name, ts_code);
-    auto js_code = swc::compile_file(argv[1], error);
+    auto js_code = swc::minify_js(swc::compile_file(argv[1], error), error);
 
     std::cout << "\n" << YELLOW << UNDERLINE << "Input:\n" << RESET << ts_code << std::endl;
     std::cout << "\n" << YELLOW << UNDERLINE << "Output:\n\n"<< RESET << code << std::endl;
@@ -41,7 +41,7 @@ console.log(greet(world));
         std::cerr << "\n" << RED << UNDERLINE << "Error:\n\n" << RESET << error << std::endl;
         swc::free_string(error);
     } else {
-        std::cout << "\n" << YELLOW << UNDERLINE << "Compiled:\n\n" << RESET << js_code << std::endl;
+        std::cout << "\n" << YELLOW << UNDERLINE << "Compiled from File and Minified:\n\n" << RESET << js_code << std::endl;
     }
 
     swc::free_string(code);
