@@ -25,8 +25,8 @@ on your beautifully organized machine (that probably has 47 versions of Node any
 
 ```bash
 # Clone the repo (and question your life choices)
-git clone https://github.com/jibbex/swc-cxx-bindings.git
-cd swc-cxx-bindings
+git clone https://github.com/jibbex/swc_cxx_bindings.git
+cd swc_cxx_bindings
 ```
 
 ### Build & Use
