@@ -15,6 +15,7 @@ swc_ecma_parser = "11.0.0"
 swc_ecma_transforms_typescript = "13.0.0"
 swc_ecma_transforms_react = "13.0.0"
 swc = "18.0.0"
+anyhow = "1.0.97"
 
 [lib]
 name = "swc"

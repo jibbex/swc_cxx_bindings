@@ -6,6 +6,7 @@ use std::{
     os::raw::c_char
 };
 use std::path::Path;
+use swc::try_with_handler;
 use swc_common::{errors::{ColorConfig, Handler}, sync::Lrc, FileName, Globals, Mark, SourceMap, GLOBALS};
 use swc_common::comments::SingleThreadedComments;
 use swc_ecma_codegen::{Config, Emitter};
@@ -18,6 +19,7 @@ use swc_ecma_transforms_base::resolver;
 use swc_ecma_transforms_typescript::strip;
 use swc_ecma_codegen::text_writer::JsWriter;
 use swc_ecma_visit::VisitMutWith;
+use anyhow::Context;
 
 /// Represents a file to transpile
 ///
@@ -165,6 +167,52 @@ pub fn transpile_tsx_to_js(
     })
 }
 
+/// Compile a TypeScript/TSX file
+///
+/// This function compiles a TypeScript/TSX file to JavaScript.
+///
+/// # Arguments
+///
+/// * `filepath` - The file path
+/// * `error` - The error message
+///
+/// # Returns
+///
+/// The compiled JavaScript code as a string or a null pointer if the compilation fails
+#[no_mangle]
+pub extern "C" fn compile_file(filepath: *const c_char, error: &mut c_char) -> *mut c_char {
+    let path = unsafe { CStr::from_ptr(filepath) }.to_str()
+        .expect("failed to convert filepath to &str");
+    let cm: Lrc<SourceMap> = Default::default();
+    let compiler = swc::Compiler::new(cm.clone());
+    let output = GLOBALS
+        .set(&Default::default(), || {
+            try_with_handler(cm.clone(), Default::default(), |handler| {
+                let fm = cm
+                    .load_file(Path::new(path))
+                    .expect("failed to load file");
+
+                compiler.process_js_file(fm, handler, &Default::default())
+                    .context("failed to process file")
+            })
+        });
+
+    match output {
+        Ok(output) => {
+            CString::new(output.code)
+                .expect("failed to serialize code").into_raw()
+        },
+        Err(e) => {
+            unsafe {
+                *error = *CString::new(e.to_string())
+                    .expect("failed to convert error message to CString")
+                    .into_raw()
+            };
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// Converts a result to a C string pointer
 ///
 /// This function converts a result to a C string pointer. If the result is an error,
@@ -262,6 +310,9 @@ pub extern "C" fn transpile(file: *const c_char, input: *const c_char) -> *mut c
 ///
 /// This function transpiles a TypeScript/TSX file to JavaScript.
 ///
+/// ### Deprecated
+/// This function is deprecated. Use the `compile_file` function instead.
+///
 /// # Arguments
 ///
 /// * `filename` - The file to transpile
@@ -311,6 +362,8 @@ pub extern "C" fn transpile(file: *const c_char, input: *const c_char) -> *mut c
 /// * `transpile`
 /// * `transpile_tsx_to_js`
 /// * `File`
+///
+/// ***Note: Deprecated***
 #[no_mangle]
 pub extern "C" fn transpile_file(filename: *const c_char) -> *mut c_char {
     let file = unsafe { CStr::from_ptr(filename) }.to_str()

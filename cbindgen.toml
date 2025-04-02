@@ -8,7 +8,7 @@ parse_deps = false
 include = ["swc"]
 
 [export]
-include = ["transpile", "transpile_file", "free_string"]
+include = ["compile_file", "transpile", "transpile_file", "free_string"]
 
 #[layout]
 #aligned_pod = true
