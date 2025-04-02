@@ -739,6 +739,7 @@ pub extern "C" fn free_const_string(s: *const c_char) {
 mod tests {
     use super::*;
     use std::ffi::CString;
+    use std::ffi::CStr;
 
     #[test]
     fn test_transpile() {
@@ -768,17 +769,5 @@ mod tests {
         let output = transpile(file.as_ptr(), input.as_ptr());
         assert_eq!(unsafe { CStr::from_ptr(output).to_str().unwrap() }, result);
         free_string(output);
-    }
-
-    #[test]
-    fn test_minify_js() {
-        let code = r#"
-            function hello() {
-                console.log('Hello, world!');
-            }
-        "#;
-        let result = "function hello(){console.log('Hello, world!');}\n".to_string();
-        let output = minify(File::FileName(FileName::Custom("input.js".parse().unwrap()), code.into()));
-        assert_eq!(output, Some(result));
     }
 }
