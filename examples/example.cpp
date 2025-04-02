@@ -39,15 +39,13 @@ console.log(greet(world));
 
     if (error != nullptr) {
         std::cerr << "\n" << RED << UNDERLINE << "Error:\n\n" << RESET << error << std::endl;
+        swc::free_string(error);
     } else {
         std::cout << "\n" << YELLOW << UNDERLINE << "Compiled:\n\n" << RESET << js_code << std::endl;
-        std::cout << js_code << std::endl;
     }
 
     swc::free_string(code);
-    swc::free_string(code_from_file);
     swc::free_string(js_code);
-    swc::free_string(error);
 
     return 0;
 }
