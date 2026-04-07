@@ -1,27 +1,28 @@
 [package]
 name = "swc_cxx_bindings"
-version = "0.0.5"
+version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
-cbindgen = "0.28.0"
-swc_common = { version = "8.0.1", features = ["tty-emitter"] }
-swc_ecma_ast = "8.1.0"
-swc_ecma_transforms_base = "12.0.0"
-swc_ecma_visit = "8.0.0"
-swc_ecma_codegen = "8.1.0"
-swc_ecma_parser = "11.0.0"
-swc_ecma_transforms_typescript = "13.0.0"
-swc_ecma_transforms_react = "13.0.0"
-swc_ecma_minifier = "14.0.0"
-swc = "18.0.0"
-anyhow = "1.0.97"
+cbindgen = "0.29.2"
+swc_common = { version = "21.0.0", features = ["tty-emitter"] }
+swc_ecma_ast = "23.0.0"
+swc_ecma_transforms_base = "41.0.0"
+swc_ecma_visit = "23.0.0"
+swc_ecma_codegen = "26.0.0"
+swc_ecma_parser = "38.0.0"
+swc_ecma_transforms_typescript = "45.0.0"
+swc_ecma_transforms_react = "45.0.0"
+swc_ecma_minifier = "50.0.0"
+swc = "60.0.0"
+anyhow = "1.0.102"
+bytes-str = "0.2.7"
 
 [lib]
 name = "swc"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-cbindgen = "0.28.0"
-build-target = "0.4.0"
+cbindgen = "0.29.2"
+build-target = "0.8.0"
