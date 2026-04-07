@@ -1,26 +1,31 @@
+use anyhow::{Context, Error};
+
+use bytes_str::BytesStr;
+use std::path::Path;
+use std::sync::Arc;
 /// # swc_ffi - FFI bindings for swc
 ///
 /// An C/C++ Interop for the swc Rust library.
 use std::{
     ffi::{CStr, CString},
-    os::raw::c_char
+    os::raw::c_char,
 };
-use std::path::Path;
-use std::sync::Arc;
 use swc::try_with_handler;
-use swc_common::{errors::{ColorConfig, Handler}, sync::Lrc, FileName, Globals, Mark, SourceFile, SourceMap, GLOBALS};
 use swc_common::comments::SingleThreadedComments;
+use swc_common::sync::Lrc;
+use swc_common::{
+    FileName, Globals, Mark, SourceFile, SourceMap, GLOBALS,
+};
+use swc_ecma_ast::Pass;
+use swc_ecma_codegen::text_writer::JsWriter;
 use swc_ecma_codegen::{Config, Emitter};
-use swc_ecma_transforms_react::{jsx, Options as JsxOptions};
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax, TsSyntax};
 use swc_ecma_transforms_base::fixer::fixer;
 use swc_ecma_transforms_base::hygiene::hygiene;
-use swc_ecma_ast::Pass;
 use swc_ecma_transforms_base::resolver;
+use swc_ecma_transforms_react::{jsx, Options as JsxOptions};
 use swc_ecma_transforms_typescript::strip;
-use swc_ecma_codegen::text_writer::JsWriter;
 use swc_ecma_visit::VisitMutWith;
-use anyhow::{Context, Error};
 
 /// Represents a file to transpile
 ///
@@ -90,12 +95,12 @@ pub fn transpile_tsx_to_js(
     cm: Lrc<SourceMap>,
     filename: File,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let handler = Handler::with_tty_emitter(
-        ColorConfig::Auto,
-        true,
-        false,
-        Some(cm.clone())
-    );
+    // let handler = Handler::with_tty_emitter(
+    //     ColorConfig::Auto,
+    //     true,
+    //     false,
+    //     Some(cm.clone())
+    // );
 
     // Load or create file
     let fm = get_js_file(filename, cm.clone())?;
@@ -123,8 +128,7 @@ pub fn transpile_tsx_to_js(
     // Parse the program
     let mut program = parser
         .parse_program()
-        .map_err(|e| e.into_diagnostic(&handler).emit())
-        .expect("program parsing failed");
+        .map_err(|_| Box::<dyn std::error::Error>::from("program parsing failed"))?;
 
     let globals = Globals::default();
     GLOBALS.set(&globals, || {
@@ -132,14 +136,20 @@ pub fn transpile_tsx_to_js(
         let top_level_mark = Mark::new();
         let mut config: Config = Default::default();
         let jsx_options = JsxOptions {
-            pragma: Some(Lrc::new("React.createElement".into())),
-            pragma_frag: Some(Lrc::new("React.Fragment".into())),
+            pragma: Some(BytesStr::from("React.createElement")),
+            pragma_frag: Some(BytesStr::from("React.Fragment")),
             ..Default::default()
         };
 
         config.target = swc_ecma_ast::EsVersion::Es2015;
         program.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, true));
-        program.visit_mut_with(&mut jsx(cm.clone(), Some(&comments), jsx_options, top_level_mark, unresolved_mark));
+        program.visit_mut_with(&mut jsx(
+            cm.clone(),
+            Some(&comments),
+            jsx_options,
+            top_level_mark,
+            unresolved_mark,
+        ));
         strip(unresolved_mark, top_level_mark).process(&mut program);
         program.visit_mut_with(&mut hygiene());
         program.visit_mut_with(&mut fixer(Some(&comments)));
@@ -148,12 +158,7 @@ pub fn transpile_tsx_to_js(
             cfg: config,
             cm: cm.clone(),
             comments: Some(&comments),
-            wr: Box::new(JsWriter::new(
-                cm.clone(),
-                "\n",
-                &mut buf,
-                None,
-            )),
+            wr: Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, None)),
         };
 
         emitter.emit_program(&program)?;
@@ -183,18 +188,18 @@ pub fn transpile_tsx_to_js(
 fn compile(file: File) -> Option<String> {
     let cm: Lrc<SourceMap> = Default::default();
     let compiler = swc::Compiler::new(cm.clone());
-    let output = GLOBALS
-        .set(&Default::default(), || {
-            try_with_handler(cm.clone(), Default::default(), |handler| {
-                let fm = get_js_file(file, cm)?;
-                compiler.process_js_file(fm, handler, &Default::default())
-                    .context("failed to process file")
-            })
-        });
+    let output = GLOBALS.set(&Default::default(), || {
+        try_with_handler(cm.clone(), Default::default(), |handler| {
+            let fm = get_js_file(file, cm)?;
+            compiler
+                .process_js_file(fm, handler, &Default::default())
+                .context("failed to process file")
+        })
+    });
 
     match output {
         Ok(output) => Some(output.code),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
@@ -235,8 +240,9 @@ fn compile(file: File) -> Option<String> {
 /// }
 /// ```
 #[no_mangle]
-pub extern "C" fn compile_file(filepath: *const c_char, error: &mut c_char) -> *mut c_char {
-    let path = unsafe { CStr::from_ptr(filepath) }.to_str()
+pub extern "C" fn compile_file(filepath: *const c_char, error: *mut *mut c_char) -> *mut c_char {
+    let path = unsafe { CStr::from_ptr(filepath) }
+        .to_str()
         .expect("failed to convert filepath to &str");
     let file = File::FilePath(Path::new(path));
     prepare_compile_result(error, file)
@@ -279,8 +285,9 @@ pub extern "C" fn compile_file(filepath: *const c_char, error: &mut c_char) -> *
 /// }
 /// ```
 #[no_mangle]
-pub extern "C" fn compile_js(code: *const c_char, error: &mut c_char) -> *mut c_char {
-    let input = unsafe { CStr::from_ptr(code) }.to_str()
+pub extern "C" fn compile_js(code: *const c_char, error: *mut *mut c_char) -> *mut c_char {
+    let input = unsafe { CStr::from_ptr(code) }
+        .to_str()
         .expect("failed to convert code to &str");
     let file = File::FileName(FileName::Custom("input.js".into()), input.into());
     prepare_compile_result(error, file)
@@ -304,16 +311,17 @@ pub extern "C" fn compile_js(code: *const c_char, error: &mut c_char) -> *mut c_
 /// # Safety
 ///
 /// This function is unsafe because it manipulates raw pointers when setting the error message.
-fn prepare_compile_result(error: &mut c_char, file: File) -> *mut c_char {
+fn prepare_compile_result(error: *mut *mut c_char, file: File) -> *mut c_char {
     match compile(file) {
         Some(output) => CString::new(output)
-            .expect("failed to serialize code").into_raw(),
+            .expect("failed to serialize code")
+            .into_raw(),
         None => {
             unsafe {
-                *error = *CString::new("failed to compile file")
+                *error = CString::new("failed to compile file")
                     .expect("failed to convert error message to CString")
                     .into_raw()
-            };
+            }
             std::ptr::null_mut()
         }
     }
@@ -342,11 +350,11 @@ fn prepare_compile_result(error: &mut c_char, file: File) -> *mut c_char {
 fn minify(file: File) -> Option<String> {
     let cm: Lrc<SourceMap> = Default::default();
     let compiler = swc::Compiler::new(cm.clone());
-    let output = GLOBALS
-        .set(&Default::default(), || {
-            try_with_handler(cm.clone(), Default::default(), |handler| {
-                let fm = get_js_file(file, cm)?;
-                compiler.minify(
+    let output = GLOBALS.set(&Default::default(), || {
+        try_with_handler(cm.clone(), Default::default(), |handler| {
+            let fm = get_js_file(file, cm)?;
+            compiler
+                .minify(
                     fm,
                     handler,
                     &swc::config::JsMinifyOptions {
@@ -354,16 +362,17 @@ fn minify(file: File) -> Option<String> {
                         mangle: swc::BoolOrDataConfig::from_bool(true),
                         ..Default::default()
                     },
-                    swc::JsMinifyExtras::default()
-                        .with_mangle_name_cache(Some(Arc::new(swc_ecma_minifier::option::SimpleMangleCache::default()))),
+                    swc::JsMinifyExtras::default().with_mangle_name_cache(Some(Arc::new(
+                        swc_ecma_minifier::option::SimpleMangleCache::default(),
+                    ))),
                 )
                 .context("failed to minify")
-            })
-        });
+        })
+    });
 
     match output {
         Ok(output) => Some(output.code),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
@@ -405,16 +414,19 @@ fn minify(file: File) -> Option<String> {
 ///     printf("Error: %s\n", error);
 /// }
 /// ```
-pub extern "C" fn minify_js_file(filepath: *const c_char, error: &mut c_char) -> *mut c_char {
-    let path = unsafe { CStr::from_ptr(filepath) }.to_str()
+#[no_mangle]
+pub extern "C" fn minify_js_file(filepath: *const c_char, error: *mut *mut c_char) -> *mut c_char {
+    let path = unsafe { CStr::from_ptr(filepath) }
+        .to_str()
         .expect("failed to convert filepath to &str");
     let file = File::FilePath(Path::new(path));
     match minify(file) {
         Some(output) => CString::new(output)
-            .expect("failed to serialize code").into_raw(),
+            .expect("failed to serialize code")
+            .into_raw(),
         None => {
             unsafe {
-                *error = *CString::new("failed to minify file")
+                *error = CString::new("failed to minify file")
                     .expect("failed to convert error message to CString")
                     .into_raw()
             };
@@ -462,16 +474,18 @@ pub extern "C" fn minify_js_file(filepath: *const c_char, error: &mut c_char) ->
 /// }
 /// ```
 #[no_mangle]
-pub extern "C" fn minify_js(code: *const c_char, error: &mut c_char) -> *mut c_char {
-    let input = unsafe { CStr::from_ptr(code) }.to_str()
+pub extern "C" fn minify_js(code: *const c_char, error: *mut *mut c_char) -> *mut c_char {
+    let input = unsafe { CStr::from_ptr(code) }
+        .to_str()
         .expect("failed to convert code to &str");
     let file = File::FileName(FileName::Custom("input.js".into()), input.into());
     match minify(file) {
         Some(output) => CString::new(output)
-            .expect("failed to serialize code").into_raw(),
+            .expect("failed to serialize code")
+            .into_raw(),
         None => {
             unsafe {
-                *error = *CString::new("failed to minify code")
+                *error = CString::new("failed to minify code")
                     .expect("failed to convert error message to CString")
                     .into_raw()
             };
@@ -499,9 +513,10 @@ pub extern "C" fn minify_js(code: *const c_char, error: &mut c_char) -> *mut c_c
 fn get_js_file(file: File, cm: Arc<SourceMap>) -> Result<Arc<SourceFile>, Error> {
     Ok(match file {
         File::FilePath(path) => cm.load_file(path)?,
-        File::FileName(name, source) => {
-            cm.new_source_file(Lrc::new(name), source.into())
-        }
+        File::FileName(name, source) => cm.new_source_file(
+            Lrc::new(name),
+            BytesStr::from(source)
+        ),
     })
 }
 
@@ -519,9 +534,9 @@ fn get_js_file(file: File, cm: Arc<SourceMap>) -> Result<Arc<SourceFile>, Error>
 /// The result as a C string pointer or a null pointer if the result is an error
 fn result_to_char_ptr(result: Result<String, Box<dyn std::error::Error>>) -> *mut c_char {
     match result {
-        Ok(output) => {
-            CString::new(output).expect("failed to convert output to CString").into_raw()
-        },
+        Ok(output) => CString::new(output)
+            .expect("failed to convert output to CString")
+            .into_raw(),
         Err(e) => {
             eprintln!("Error: {}", e);
             std::ptr::null_mut()
@@ -589,13 +604,18 @@ fn result_to_char_ptr(result: Result<String, Box<dyn std::error::Error>>) -> *mu
 /// * `transpile_tsx_to_js`
 /// * `File`
 #[no_mangle]
-pub extern "C" fn transpile(file: *const c_char, input: *const c_char) -> *mut c_char  {
-    let file = unsafe { CStr::from_ptr(file) }.to_str().expect("failed to convert file to &str");
-    let input = unsafe { CStr::from_ptr(input) }.to_str().expect("failed to convert input to &str");
+pub extern "C" fn transpile(file: *const c_char, input: *const c_char) -> *mut c_char {
+    let file = unsafe { CStr::from_ptr(file) }
+        .to_str()
+        .expect("failed to convert file to &str");
+    let input = unsafe { CStr::from_ptr(input) }
+        .to_str()
+        .expect("failed to convert input to &str");
     let cm: Lrc<SourceMap> = Default::default();
-    result_to_char_ptr(
-        transpile_tsx_to_js(cm, File::FileName(FileName::Custom(String::from(file)), input.into()))
-    )
+    result_to_char_ptr(transpile_tsx_to_js(
+        cm,
+        File::FileName(FileName::Custom(String::from(file)), input.into()),
+    ))
 }
 
 /// Transpile a TypeScript/TSX file to JavaScript
@@ -658,7 +678,8 @@ pub extern "C" fn transpile(file: *const c_char, input: *const c_char) -> *mut c
 /// ***Note: Deprecated***
 #[no_mangle]
 pub extern "C" fn transpile_file(filename: *const c_char) -> *mut c_char {
-    let file = unsafe { CStr::from_ptr(filename) }.to_str()
+    let file = unsafe { CStr::from_ptr(filename) }
+        .to_str()
         .expect("failed to convert filename to &str");
     let cm: Lrc<SourceMap> = Default::default();
     result_to_char_ptr(transpile_tsx_to_js(cm, File::FilePath(Path::new(file))))
@@ -700,7 +721,6 @@ pub extern "C" fn free_string(s: *mut c_char) {
     };
 }
 
-
 /// Frees memory allocated for constant string pointers.
 ///
 /// This function properly deallocates memory pointed to by a constant C string pointer.
@@ -738,15 +758,19 @@ pub extern "C" fn free_const_string(s: *const c_char) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::CString;
     use std::ffi::CStr;
+    use std::ffi::CString;
 
     #[test]
     fn test_transpile() {
         let file = CString::new("test.ts").expect("failed to convert file to CString");
-        let input = CString::new("const a: number = 1;").expect("failed to convert input to CString");
+        let input =
+            CString::new("const a: number = 1;").expect("failed to convert input to CString");
         let output = transpile(file.as_ptr(), input.as_ptr());
-        assert_eq!(unsafe { CStr::from_ptr(output).to_str().unwrap() }, "const a = 1;\n");
+        assert_eq!(
+            unsafe { CStr::from_ptr(output).to_str().unwrap() },
+            "const a = 1;\n"
+        );
         free_string(output);
     }
 
