@@ -6,7 +6,7 @@ use std::path::Path;
 use cbindgen::DocumentationStyle;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let crate_dir = env::var::<String>("CARGO_MANIFEST_DIR".into()).unwrap();
 
     // Configure cbindgen
     let config = cbindgen::Config {
@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Generate bindings
     match cbindgen::generate_with_config(crate_dir.clone(), config) {
         Ok(bindings) => {
-            bindings.write_to_file("swc.h");
+            bindings.write_to_file("swc.h".to_string());
             println!("cargo:rerun-if-changed=src/lib.rs");
         },
         Err(e) => {
@@ -33,18 +33,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Copy the built library to a convenient location
-    let profile = build_target::Profile::current()?;
+    let profile = build_target::Profile::current();
 
-    let target_dir = Path::new(&crate_dir).join("target");
+    let target_dir = Path::new(&crate_dir).join("target".to_string());
     let (src_lib, dest_lib) = if profile == build_target::Profile::Release {
         (
-            target_dir.join("release").join("libswc.so"),
-            Path::new(&crate_dir).join("libswc.so")
+            target_dir.join("release".to_string()).join("libswc.so".to_string()),
+            Path::new(&crate_dir).join("libswc.so".to_string())
         )
     } else {
         (
-            target_dir.join("debug").join("libswc.so"),
-            Path::new(&crate_dir).join("libswc-devel.so")
+            target_dir.join("debug".to_string()).join("libswc.so".to_string()),
+            Path::new(&crate_dir).join("libswc-devel.so".to_string())
         )
     };
 
